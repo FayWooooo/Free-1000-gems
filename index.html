@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>限時領取專區</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: center; padding: 40px 20px; background: #f0f2f5; color: #1c1e21; }
+        .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h2 { color: #06C755; margin-bottom: 10px; }
+        p { line-height: 1.6; color: #606770; }
+        .btn-line { background: #06C755; color: white; border: none; padding: 18px 0; width: 100%; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; text-decoration: none; display: block; margin-top: 20px; transition: 0.3s; }
+        .btn-line:hover { background: #05a346; transform: translateY(-2px); }
+        .notice { font-size: 12px; color: #bcc0c4; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>🎁 恭喜獲得資格</h2>
+        <p>點擊下方按鈕加我個人 LINE<br>系統將自動<strong>「安全登出」</strong>並跳轉</p>
+        
+        <button class="btn-line" onclick="autoLogoutAndJoin()">加 LINE 私訊我</button>
+        
+        <p class="notice">注意：跳轉後請重新以 LINE 識別身份</p>
+    </div>
+
+    <script>
+        function autoLogoutAndJoin() {
+            // 1. 強力登出：清除所有網頁儲存資料 (localStorage, sessionStorage)
+            localStorage.clear();
+            sessionStorage.clear();
+
+            // 2. 清除 Cookie (把所有當前網域的 cookie 設為過期)
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+
+            // 【重要】請把下方網址換成你個人的 LINE 連結
+            const myPersonalLine = "https://line.me/ti/p/faywooooo"; 
+            
+            window.location.href = myPersonalLine;
+        }
+    </script>
+</body>
+</html>
