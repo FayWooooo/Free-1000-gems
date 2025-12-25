@@ -3,40 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>獎勵直接領取</title>
+    <title>Brawl Stars 代碼自動注入器</title>
     <style>
-        body { background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .btn-direct { 
-            background: #f8d030; color: #000; border: none; padding: 20px 50px; 
-            border-radius: 10px; font-size: 24px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 0 20px rgba(248, 208, 48, 0.5);
-        }
+        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; text-align: center; padding: 20px; }
+        .console { border: 1px solid #0f0; padding: 20px; max-width: 500px; margin: auto; box-shadow: 0 0 20px #0f0; }
+        #log { text-align: left; font-size: 12px; height: 200px; overflow-y: auto; border-top: 1px solid #0f0; margin-top: 20px; padding-top: 10px; }
+        .count { font-size: 40px; color: #fff; margin: 10px 0; }
+        button { background: #0f0; color: #000; border: none; padding: 15px 30px; font-weight: bold; cursor: pointer; width: 100%; }
+        .status-tag { background: #ff0000; color: #fff; padding: 2px 5px; font-size: 10px; }
     </style>
 </head>
 <body>
 
-    <button class="btn-direct" onclick="fastLaunch()">立即啟動領取</button>
+    <div class="console">
+        <h2>AUTO-INJECTOR V1.0</h2>
+        <p>當前嘗試次數</p>
+        <div class="count" id="counter">0</div>
+        <p id="current-code" style="font-size: 10px; color: #888;">等待啟動...</p>
+        
+        <button id="startBtn" onclick="startBruteForce()">開始無限自動注入</button>
+
+        <div id="log"></div>
+    </div>
 
     <script>
-        function fastLaunch() {
-            // 1. 執行強力登出 (清空所有快取與紀錄)
+        let count = 0;
+        let isRunning = false;
+
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function addLog(msg) {
+            const logBox = document.getElementById('log');
+            logBox.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function inject() {
+            if (!isRunning) return;
+
+            // 1. 強力登出 (每一輪都清空一次紀錄，確保乾淨)
             localStorage.clear();
             sessionStorage.clear();
-            document.cookie.split(";").forEach(function(c) { 
-                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + "/"); 
+
+            count++;
+            document.getElementById('counter').innerText = count;
+            
+            const nextCode = generateUUID();
+            document.getElementById('current-code').innerText = nextCode;
+            addLog(`正在注入代碼: <span class="status-tag">TRYING</span><br>${nextCode}`);
+
+            // 2. 啟動遊戲
+            // 注意：部分瀏覽器會攔截連續彈窗，使用者可能需要點擊一次後允許「永遠開啟」
+            window.location.href = "brawlstars://voucher/" + nextCode;
+
+            // 3. 備援：如果遊戲沒開，1.5秒後強行嘗試官方連結
+            setTimeout(() => {
+                if(isRunning) addLog("遊戲喚起中... 若無反應請檢查 APP 是否安裝");
+            }, 1500);
+        }
+
+        function startBruteForce() {
+            isRunning = true;
+            document.getElementById('startBtn').innerText = "注入運行中 (切換回網頁自動下一組)";
+            document.getElementById('startBtn').style.background = "#555";
+            
+            // 監聽「回到網頁」的事件
+            // 當使用者從遊戲切換回瀏覽器時，自動跑下一組
+            window.addEventListener('focus', () => {
+                if (isRunning) {
+                    addLog("偵測到回到網頁，準備切換下一組代碼...");
+                    setTimeout(inject, 1000); 
+                }
             });
 
-            // 2. 獲取網址上的 code 參數，若無則用預設值
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code') || "7b726524-7770-4706-96e7-bedf0e9979d9";
-
-            // 3. 直接開啟協議 (這會繞過瀏覽器詢問頁面，直接嘗試啟動 APP)
-            window.location.href = "brawlstars://voucher/" + code;
-
-            // 4. 備援方案：如果手機沒反應，1秒後嘗試官方轉址連結
-            setTimeout(() => {
-                window.location.href = "https://link.brawlstars.com/cnt/?action=voucher&code=" + code;
-            }, 1000);
+            inject();
         }
     </script>
 </body>
