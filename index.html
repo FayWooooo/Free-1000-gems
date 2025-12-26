@@ -3,85 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brawl Stars 代碼自動注入器</title>
+    <title>荒野亂鬥 - 限時獎勵領取</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; text-align: center; padding: 20px; }
-        .console { border: 1px solid #0f0; padding: 20px; max-width: 500px; margin: auto; box-shadow: 0 0 20px #0f0; }
-        #log { text-align: left; font-size: 12px; height: 200px; overflow-y: auto; border-top: 1px solid #0f0; margin-top: 20px; padding-top: 10px; }
-        .count { font-size: 40px; color: #fff; margin: 10px 0; }
-        button { background: #0f0; color: #000; border: none; padding: 15px 30px; font-weight: bold; cursor: pointer; width: 100%; }
-        .status-tag { background: #ff0000; color: #fff; padding: 2px 5px; font-size: 10px; }
+        body { background-color: #0f172a; color: white; font-family: 'PingFang TC', sans-serif; overflow-x: hidden; }
+        .brawl-gradient { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        
+        /* 隱藏 YT 雜訊的黑科技 */
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            transform: scale(0.6);
+            pointer-events: none;
+        }
+        #video-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 100; }
+        .reward-img { animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .count-down { color: #ef4444; font-weight: bold; }
     </style>
 </head>
-<body>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
 
-    <div class="console">
-        <h2>AUTO-INJECTOR V1.0</h2>
-        <p>當前嘗試次數</p>
-        <div class="count" id="counter">0</div>
-        <p id="current-code" style="font-size: 10px; color: #888;">等待啟動...</p>
+    <div id="main-card" class="w-full max-w-md bg-slate-800 rounded-3xl p-8 shadow-2xl border-4 border-amber-500 text-center">
+        <div class="inline-block bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full mb-4 animate-pulse">
+            LIVE: 限時 1,000 份獎勵發放中
+        </div>
         
-        <button id="startBtn" onclick="startBruteForce()">開始無限自動注入</button>
+        <h1 class="text-3xl font-black italic text-amber-500 mb-2">SPECIAL REWARD</h1>
+        
+        <div class="py-8">
+            <img src="gems.png" alt="1000gems" class="reward-img w-48 mx-auto drop-shadow-[0_0_25px_rgba(245,158,11,0.6)]">
+            <p class="text-white font-black text-3xl mt-4 tracking-wider">1000 寶石</p>
+        </div>
 
-        <div id="log"></div>
+        
+        <button onclick="startProcess()" class="w-full brawl-gradient py-5 rounded-2xl text-2xl font-black text-slate-900 hover:scale-105 active:scale-95 transition-transform shadow-[0_10px_20px_rgba(0,0,0,0.3)]">
+            立即領取
+        </button>
+
+        <p class="mt-4 text-[10px] text-slate-500 italic">點擊領取代表您同意透過觀看贊助內容獲得獎勵</p>
+    </div>
+
+    <div id="video-overlay" class="flex flex-col items-center justify-center p-4">
+        <div class="w-full max-w-lg text-center">
+            <div class="flex justify-between items-center mb-2">
+                <span class="bg-amber-500 text-black px-2 py-1 text-[10px] font-bold rounded">廣告贊助中...</span>
+                <span id="timer" class="text-white font-mono bg-white/10 px-3 py-1 rounded-full text-sm">15s</span>
+            </div>
+            <div class="video-container shadow-2xl border-2 border-white/10">
+                <iframe id="adVideo" src="" frameborder="0" allow="autoplay; encrypted-media"></iframe>
+            </div>
+            <p class="mt-6 text-white text-sm font-medium">廣告結束後獎勵將自動跳轉領取頁面</p>
+        </div>
+    </div>
+
+    <div id="success-card" class="hidden w-full max-w-md bg-slate-800 rounded-3xl p-8 shadow-2xl border-4 border-green-500 text-center">
+        <div class="mb-4">
+            <span class="bg-green-500/20 text-green-400 text-xs font-bold px-4 py-1 rounded-full">驗證成功</span>
+        </div>
+        <h2 class="text-3xl font-black text-white mb-2">獎勵已就緒！</h2>
+        
+        <div class="relative py-8">
+            <img src="gems.png" alt="1000gems" class="w-40 mx-auto">
+            <p class="text-amber-400 font-black text-4xl mt-4">1000 GEMS</p>
+        </div>
+
+        <a href="brawlstars://voucher/7b726524-7770-4706-96e7-bedf0e9979d8" 
+           class="block w-full brawl-gradient py-6 rounded-2xl text-2xl font-black text-slate-900 shadow-[0_0_30px_rgba(245,158,11,0.5)] hover:scale-105 active:scale-95 transition-transform">
+            確認領取
+        </a>
     </div>
 
     <script>
-        let count = 0;
-        let isRunning = false;
+        const videoOverlay = document.getElementById('video-overlay');
+        const adVideo = document.getElementById('adVideo');
+        const timerText = document.getElementById('timer');
+        const stockText = document.getElementById('stock');
 
-        function generateUUID() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        }
+        // 模擬庫存動態減少
+        setInterval(() => {
+            let currentStock = parseInt(stockText.innerText);
+            if (currentStock > 3) {
+                stockText.innerText = currentStock - 1;
+            }
+        }, 8000);
 
-        function addLog(msg) {
-            const logBox = document.getElementById('log');
-            logBox.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
-            logBox.scrollTop = logBox.scrollHeight;
-        }
+        function startProcess() {
+            videoOverlay.style.display = 'flex';
+            // 使用你的影片 ID
+            adVideo.src = "https://www.youtube.com/embed/JrIIJVkKc0M?autoplay=1&controls=0&mute=1&rel=0&modestbranding=1"; 
 
-        function inject() {
-            if (!isRunning) return;
-
-            // 1. 強力登出 (每一輪都清空一次紀錄，確保乾淨)
-            localStorage.clear();
-            sessionStorage.clear();
-
-            count++;
-            document.getElementById('counter').innerText = count;
-            
-            const nextCode = generateUUID();
-            document.getElementById('current-code').innerText = nextCode;
-            addLog(`正在注入代碼: <span class="status-tag">TRYING</span><br>${nextCode}`);
-
-            // 2. 啟動遊戲
-            // 注意：部分瀏覽器會攔截連續彈窗，使用者可能需要點擊一次後允許「永遠開啟」
-            window.location.href = "brawlstars://voucher/" + nextCode;
-
-            // 3. 備援：如果遊戲沒開，1.5秒後強行嘗試官方連結
-            setTimeout(() => {
-                if(isRunning) addLog("遊戲喚起中... 若無反應請檢查 APP 是否安裝");
-            }, 1500);
-        }
-
-        function startBruteForce() {
-            isRunning = true;
-            document.getElementById('startBtn').innerText = "注入運行中 (切換回網頁自動下一組)";
-            document.getElementById('startBtn').style.background = "#555";
-            
-            // 監聽「回到網頁」的事件
-            // 當使用者從遊戲切換回瀏覽器時，自動跑下一組
-            window.addEventListener('focus', () => {
-                if (isRunning) {
-                    addLog("偵測到回到網頁，準備切換下一組代碼...");
-                    setTimeout(inject, 1000); 
+            let timeLeft = 15;
+            const countdown = setInterval(() => {
+                timeLeft--;
+                timerText.innerText = timeLeft + 's';
+                if (timeLeft <= 0) {
+                    clearInterval(countdown);
+                    showSuccess();
                 }
-            });
+            }, 1000);
+        }
 
-            inject();
+        function showSuccess() {
+            videoOverlay.style.display = 'none';
+            document.getElementById('main-card').style.display = 'none';
+            document.getElementById('success-card').classList.remove('hidden');
+            adVideo.src = ""; 
         }
     </script>
 </body>
